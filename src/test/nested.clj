@@ -15,7 +15,16 @@
   ;; This is pulled almost directly from http://nathanmarz.com/blog/news-feed-in-38-lines-of-code-using-cascalog.html
   ;; It was originally a dynamic query which explains the presense of gen-nullable-vars, which generates variables names from UUIDs
   ;; It can be converted by taking outargs out of the let binding form, rename outargs to ?outargs and use :> instead of :>>
-  (let [outargs (v/gen-nullable-vars 1)
+  ;;
+  ;; The static query version:
+  ;;
+  ;; (let [source (hfs-textline dir)]
+  ;;   (<- [?outargs]
+  ;;       (source ?line)
+  ;;       (read-string ?line :> ?outargs)
+  ;;       (:distinct false))))
+  ;;
+  (let [outargs (v/gen-nullable-vars 1) ;; Generate a dynamic list of vars, see above.
         source (hfs-textline dir)]      ;; Create a tap which pulls lines from a text file in HFS.
     (<- outargs
         (source ?line)                  ;; Pull one line from the source tap, and place it in ?line.

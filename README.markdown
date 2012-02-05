@@ -1,1 +1,1 @@
-My notes from learning cascalog
+My notes from learning cascalog. This code represents a snapshot in time of my learning process, I do not claim to know what I'm doing. In fact I fully expect there to be errors both in code and understanding.
