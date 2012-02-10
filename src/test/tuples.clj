@@ -24,7 +24,7 @@
   [dir]
   (let [source (hfs-textline dir)]
     (<- [?groupid ?artifactid ?version ?size !sha1 !md5 !path
-         !prefix ?javadoc? !source? ?signature? !classnames
+         !prefix ?javadoc !source ?signature !classnames
          ?lastmodified !packaging !repository !remoteurl
          !description !fname !fextension !bundle_version
          !bundle_symname !bundle_exportpkg !bundle_exportsrv
@@ -32,7 +32,7 @@
          !bundle_docurl !bundle_importpkg]
         (source ?line)
         (create-artifact-tuple ?line :> ?groupid ?artifactid ?version ?size !sha1 !md5 !path
-                               !prefix ?javadoc? !source? ?signature? !classnames
+                               !prefix ?javadoc !source ?signature !classnames
                                ?lastmodified !packaging !repository !remoteurl
                                !description !fname !fextension !bundle_version
                                !bundle_symname !bundle_exportpkg !bundle_exportsrv
