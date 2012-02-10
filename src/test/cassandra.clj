@@ -28,7 +28,7 @@
   "take the list of field names, strip ! and ? and that will be our
    cassandra column names"
   (doall
-   (map #(string/replace %1 "!" "")
+   (map #(str "maven_" (string/replace %1 "!" ""))
         (map #(string/replace %1 "?" "")
              field-names))))
 
@@ -42,7 +42,7 @@
 (defn get-package-identity
   "our row key generator"
   [groupid artifactid]
-  (format "%s|%s" groupid artifactid))
+  (format "%s/%s" groupid artifactid))
 
 (defmapcatop format-for-output
   "I couldn't figure out how to create a query whoes output field
@@ -50,9 +50,9 @@
    and flip it vertically so we do a bunch of inserts one column at a
    time. We also convert all values to strings."
   [& fields]
-  (let [row-key (get-package-identity (first fields) (first (rest fields)))       ;; get the row key
-        nulls-removed (filter #(last %1) (zipmap column-names (map str fields)))] ;; remove fields which have a null value, convert all remaining values to strings
-    (map (partial cons row-key) nulls-removed)))                                  ;; append row key to the front of every [col-name, value] tuple
+  (let [row-key (get-package-identity (first fields) (first (rest fields))) ;; get the row key
+        nulls-removed (filter last (map vector column-names fields))]       ;; transpose to [col-name, value] tuples, remove fields which have a null value
+    (map (partial cons row-key) (map (partial map str) nulls-removed))))    ;; convert values to strings and append row key to the front of every [col-name, value] tuple
 
 (defn -main
   [input-path]
