@@ -25,6 +25,8 @@
    "!bundle_importpkg"])
 
 (def column-names
+  "take the list of field names, strip ! and ? and that will be our
+   cassandra column names"
   (doall
    (map #(string/replace %1 "!" "")
         (map #(string/replace %1 "?" "")
@@ -34,37 +36,31 @@
   "convert the input map to a vector with the values in the order
    supplied by artifact-keys"
   [input]
-  (let [artifact (read-string input)]
-    (into [] (map (partial get artifact) artifact-keys))))
+  (let [artifact (read-string input)]                      ;; read the input string wich is an s-expression serialized hash
+    (into [] (map (partial get artifact) artifact-keys)))) ;; get hash values, but put them in the order specified by artifact-keys
 
 (defn get-package-identity
+  "our row key generator"
   [groupid artifactid]
   (format "%s|%s" groupid artifactid))
 
 (defmapcatop format-for-output
+  "I couldn't figure out how to create a query whoes output field
+   count varied depending on the input. So instead I take a wide row
+   and flip it vertically so we do a bunch of inserts one column at a
+   time. We also convert all values to strings."
   [& fields]
-  (let [row-key (get-package-identity (first fields) (first (rest fields)))
-        nulls-removed (filter #(last %1) (zipmap column-names (map str fields)))]
-    (map (partial cons row-key) nulls-removed)))
+  (let [row-key (get-package-identity (first fields) (first (rest fields)))       ;; get the row key
+        nulls-removed (filter #(last %1) (zipmap column-names (map str fields)))] ;; remove fields which have a null value, convert all remaining values to strings
+    (map (partial cons row-key) nulls-removed)))                                  ;; append row key to the front of every [col-name, value] tuple
 
 (defn -main
   [input-path]
   (let [source (hfs-textline input-path)
-        schema (WideRowScheme.)
-        tap (CassandraTap. "localhost" (Integer/valueOf 9160) "test" "test" schema)]
+        schema (WideRowScheme.)                                                      ;; create the wide schema, it takes no parameters
+        tap (CassandraTap. "localhost" (Integer/valueOf 9160) "test" "test" schema)] ;; connect to the cluster on localhost, keyspace test, column family test
     (?<- tap
          [?row-key ?col ?val]
-         (source ?line)
-         (create-artifact-tuple ?line :>> field-names)
-         (format-for-output :<< field-names :> ?row-key ?col ?val))))
-
-
-
-;;         )))
-;;         (format-for-output :<< field-names :>> output-fields))))
-;;
-;; (let []
-;; (max-lastchanged (stdout) input-path))
-;; (?<- (stdout) (textline-parsed input-path) input-path)              ;; print all rows
-;; (query-uniq-group-ids (stdout) input-path))) ;; print rows which have a unique identity
-;; schema (CassandraScheme. (w/fields "?name") (w/fields-array ["?name"]))
+         (source ?line)                                                              ;; pull a line in from the input file
+         (create-artifact-tuple ?line :>> field-names)                               ;; convert input string to a tuple of named fields
+         (format-for-output :<< field-names :> ?row-key ?col ?val))))                ;; convert tuple to a series of [row-key, col-name, value] tuples
